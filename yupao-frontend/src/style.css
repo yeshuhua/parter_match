@@ -1,0 +1,8 @@
+.add_btn {
+    position: fixed !important;
+    bottom: 60px;
+    right: 12px;
+    width: 60px;
+    height: 60px !important;
+    border-radius: 50% !important;
+}

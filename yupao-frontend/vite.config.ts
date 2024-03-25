@@ -5,6 +5,12 @@ import { VantResolver } from 'unplugin-vue-components/resolvers';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    // 添加静态资源服务配置
+    fs: {
+      allow: ['.', './public']
+    }
+  },
   plugins: [
     vue(),
     Components({

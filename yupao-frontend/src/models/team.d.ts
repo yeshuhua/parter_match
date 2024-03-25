@@ -17,6 +17,14 @@ export type TeamType = {
     Users?: UserType[];
 }
 
+export type EditTeamType = {
+    password?: string;
+    status?: TeamStatus;
+    expireTime?: string | stirng[];
+    description?: string;
+    name?: string;
+}
+
 enum TeamStatus {
     Public = 0,
     Private = 1,

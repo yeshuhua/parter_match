@@ -1,13 +1,16 @@
 <template>
     <div id="UserTeamJoinPage">
         <van-search v-model="searchText"
+                    class="search"
                     placeholder="搜索队伍"
                     @search="onSearch"
                     @clear="onCancel" />
-        <user-team-list :team-list="teamList"></user-team-list>
-        <van-empty v-if="!teamList || teamList.length == 0"
-                   image="search"
-                   description="搜索结果为空" />
+        <div class="content">
+            <user-team-list :team-list="teamList"></user-team-list>
+            <van-empty v-if="!teamList || teamList.length == 0"
+                       image="search"
+                       description="搜索结果为空" />
+        </div>
     </div>
 </template>
 
@@ -17,12 +20,13 @@ import TeamCardList from "../components/TeamCardList.vue";
 import myAxios from '../plugins/myAxios';
 import { showFailToast, showSuccessToast } from 'vant';
 import { getLoginUser } from '../globals/user';
+import { UserType } from '../models/user';
 export default defineComponent({
     components: {
         'user-team-list': TeamCardList
     },
     setup() {
-        const currentUser = ref({});
+        const currentUser = ref<UserType>();
         const teamList = ref([]);
         const searchText = ref('');
         onMounted(async () => {
@@ -41,7 +45,7 @@ export default defineComponent({
                 params: {
                     searchText: val,
                     // 在本用户创建的队伍基础上筛选
-                    userId: currentUser.value.id
+                    userId: currentUser.value?.id
                 }
             })
             if (res.code == 0) {
@@ -68,4 +72,16 @@ export default defineComponent({
 })
 </script>
 
-<style scoped></style>
+<style scoped>
+.search {
+    position: fixed;
+    top: 46px;
+    left: 0;
+    right: 0;
+    z-index: 1;
+}
+
+.content {
+    padding-top: 46px;
+}
+</style>

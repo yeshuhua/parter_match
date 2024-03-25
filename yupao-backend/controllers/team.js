@@ -51,15 +51,37 @@ module.exports = {
         if (num >= 5) return res.json(BaseBack.buildError('用户最多创建5个队伍'))
         // 向两个表中插入数据，注意原子性，不能一个成功一个失败，可以开启mysql事务
         // 这里未作事务处理
-        const result = await Mappers.Team.teamAdd(req.body)
-        const result1 = await Mappers.Team.teamUserAdd({
-            userId: userId,
-            teamId: result.id
-        })
-        if (result && result1) {
+        // 首先,我们开始一个事务并将其保存到变量中
+        // console.log(JSON.stringify(req.body));
+        const t = await sequelize.transaction();
+        try {
+            const team = await Mappers.Team.teamAdd({ ...req.body, transaction: t });
+            await Mappers.Team.teamUserAdd({
+                userId: userId,
+                teamId: team.id,
+                transaction: t
+            })
+            // 如果执行到此行,且没有引发任何错误.
+            // 我们提交事务.
+            await t.commit();
             return res.json(BaseBack.buildSuccess())
+        } catch (error) {
+
+
+            // 如果执行到达此行,则抛出错误.
+            // 我们回滚事务.
+            await t.rollback();
+            return res.json(BaseBack.buildResult(CodeEnum.SYSTEM_ERROR))
         }
-        return res.json(BaseBack.buildResult(CodeEnum.SYSTEM_ERROR))
+        // const result = await Mappers.Team.teamAdd(req.body)
+        // const result1 = await Mappers.Team.teamUserAdd({
+        //     userId: userId,
+        //     teamId: result.id
+        // })
+        // if (result && result1) {
+        //     return res.json(BaseBack.buildSuccess())
+        // }
+
     },
     // 退出队伍
     teamQuit: async (req, res) => {
@@ -91,13 +113,35 @@ module.exports = {
         })
         // 队伍只有一人
         if (teamHasJoinNum == 1) {
-            // 队伍解散，同时删除队伍以及所有加入队伍的关系。
-            // 删除Team中队伍，Team_User关联表中对应的Team相关的数据也会自动删除。
-            let result1 = await Mappers.Team.teamDelete({
-                where: {
-                    id: teamId - 0
-                }
-            })
+            const t = await sequelize.transaction();
+            try {
+                // 队伍解散，同时删除队伍以及所有加入队伍的关系。
+                // 删除Team中队伍，Team_User关联表中对应的Team相关的数据也会自动删除。
+                await Mappers.Team.teamDelete({
+                    where: {
+                        id: teamId - 0
+                    },
+                    transaction: t
+                })
+                await Mappers.Team.teamUserDelete({
+                    where: {
+                        teamId,
+                        userId
+                    },
+                    transaction: t
+                })
+                await t.commit();
+                return res.json(BaseBack.buildSuccess());
+            } catch {
+                await t.rollback();
+                return res.json(BaseBack.buildError('退出失败'));
+            }
+
+            // let result1 = await Mappers.Team.teamDelete({
+            //     where: {
+            //         id: teamId - 0
+            //     }
+            // })
             /*
             let result2 = await Mappers.Team.teamUserDelete({
                 where: {
@@ -430,12 +474,35 @@ module.exports = {
         if (team == null) return res.json(BaseBack.buildError('队伍不存在'));
         // 不是当前队伍的队长
         if (team.userId != userId) return res.json(BaseBack.buildResult(CodeEnum.NO_AUTH));
-        const result = await Mappers.Team.teamDelete({
-            where: {
-                id: teamId
-            }
-        })
-        if (!result) return res.json(BaseBack.buildError('删除队伍相关信息失败'));
-        return res.json(BaseBack.buildSuccess());
+        const t = await sequelize.transaction();
+        try {
+            // 队伍表删除队伍
+            await Mappers.Team.teamDelete({
+                where: {
+                    id: teamId
+                },
+                transaction: t
+            })
+            // 队伍关系表删除所有用户与该队伍的关系
+            await Mappers.Team.teamUserDelete({
+                where: {
+                    teamId
+                },
+                transaction: t
+            })
+            await t.commit();
+            return res.json(BaseBack.buildSuccess());
+        } catch {
+            await t.rollback();
+            return res.json(BaseBack.buildError('删除队伍相关信息失败'));
+        }
+
+        // const result = await Mappers.Team.teamDelete({
+        //     where: {
+        //         id: teamId
+        //     }
+        // })
+        // if (!result) return res.json(BaseBack.buildError('删除队伍相关信息失败'));
+        // return res.json(BaseBack.buildSuccess());
     }
 }

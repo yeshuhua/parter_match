@@ -117,7 +117,7 @@ const onSubmit = async () => {
 const result = ref('');
 const showPicker = ref(false);
 // DatePicker弹出层确认
-const onConfirm = ({ selectedValues }) => {
+const onConfirm = ({ selectedValues }: { selectedValues: string[] }) => {
     console.log(selectedValues);
     // 时间格式化
     result.value = selectedValues.join('/');

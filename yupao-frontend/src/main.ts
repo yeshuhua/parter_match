@@ -30,7 +30,8 @@ import {
     Notify,
     Tab,
     Tabs,
-    Dialog
+    Dialog,
+    Skeleton
 } from 'vant';
 
 const app = createApp(App);
@@ -65,4 +66,5 @@ app.use(Notify);
 app.use(Tab);
 app.use(Tabs);
 app.use(Dialog);
+app.use(Skeleton)
 app.mount('#app');

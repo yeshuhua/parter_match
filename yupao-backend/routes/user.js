@@ -14,6 +14,7 @@ router.get('/user/current', User.current)
 router.get('/user/search/tags', User.searchUsersByTags)
 router.post('/user/update', User.updateUser)
 router.get('/user/recommend', User.userRecommend)
+router.get('/user/match', User.matchUsers)
 
 
 module.exports = router

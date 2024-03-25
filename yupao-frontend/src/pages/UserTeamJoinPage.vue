@@ -1,13 +1,16 @@
 <template>
     <div id="UserTeamJoinPage">
         <van-search v-model="searchText"
+                    class="search"
                     placeholder="搜索队伍"
                     @search="onSearch"
                     @clear="onCancel" />
-        <user-team-list :team-list="teamList"></user-team-list>
-        <van-empty v-if="!teamList || teamList.length == 0"
-                   image="search"
-                   description="搜索结果为空" />
+        <div class="content">
+            <user-team-list :team-list="teamList"></user-team-list>
+            <van-empty v-if="!teamList || teamList.length == 0"
+                       image="search"
+                       description="搜索结果为空" />
+        </div>
     </div>
 </template>
 
@@ -16,6 +19,7 @@ import { ref, onMounted, defineComponent } from 'vue';
 import TeamCardList from "../components/TeamCardList.vue";
 import myAxios from '../plugins/myAxios';
 import { showFailToast, showSuccessToast, showNotify } from 'vant';
+import { TeamUserType } from '../models/teamUser';
 export default defineComponent({
     components: {
         'user-team-list': TeamCardList
@@ -36,7 +40,7 @@ export default defineComponent({
                 return;
             }
             // 队伍id数组作为后端枚举查询条件
-            idsArr.value = res.data.map(item => item.teamId);
+            idsArr.value = res.data.map((item: TeamUserType) => item.teamId);
             const res2 = await myAxios.get('/team/list', {
                 params: {
                     ids: JSON.stringify(idsArr.value)
@@ -83,4 +87,16 @@ export default defineComponent({
 
 </script>
 
-<style scoped></style>
+<style scoped>
+.search {
+    position: fixed;
+    top: 46px;
+    left: 0;
+    right: 0;
+    z-index: 1;
+}
+
+.content {
+    padding-top: 46px;
+}
+</style>

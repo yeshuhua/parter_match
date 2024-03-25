@@ -39,6 +39,7 @@ class User extends BASE_DB_METHOD {
 class Team extends BASE_DB_METHOD {
     // 创建队伍
     async teamAdd(obj) {
+        // console.log(obj);
         return await this.create('Team', obj);
     }
 

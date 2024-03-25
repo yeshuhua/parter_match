@@ -3,6 +3,7 @@
         <van-card v-for="team in props.teamList"
                   :desc="team.description"
                   :title="team.name"
+                  :key="team.id"
                   :thumb="kun">
             <template #tags>
                 <van-tag plain
@@ -64,6 +65,7 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { TeamType } from "../models/team";
+import { TeamUserType } from "../models/teamUser";
 import { teamStatusEnum } from "../constants/team";
 import { showSuccessToast, showFailToast, showNotify } from 'vant';
 import myAxios from "../plugins/myAxios";
@@ -84,7 +86,7 @@ const showPwdDialog = ref(false);
 const teamPassword = ref('');
 // 获取当前用户
 const currentUser = ref<{ id?: number }>();
-const hasJoinTeamIds = ref([]);
+const hasJoinTeamIds = ref<number[]>([]);
 const joinTeamId = ref();
 onMounted(async () => {
     currentUser.value = await getLoginUser();
@@ -99,14 +101,16 @@ onMounted(async () => {
         return;
     }
     // 队伍id数组作为后端枚举查询条件
-    hasJoinTeamIds.value = res.data.map(item => item.teamId);
+    hasJoinTeamIds.value = res.data.map((item: TeamUserType) => item.teamId);
 })
 
 const preJoinTeam = (team: TeamType) => {
     joinTeamId.value = team.id;
+    // 公开的队伍和私人队伍不用输入密码
     if (team.status == 0 || team.status == 1) {
         doJoinTeam();
     } else {
+        // 加密队伍，需要输入密码，显示弹窗
         showPwdDialog.value = true;
     }
 }
@@ -119,6 +123,7 @@ const doJoinTeam = async () => {
     })
     if (res.code == 0) {
         showSuccessToast('加入成功');
+        hasJoinTeamIds.value.push(joinTeamId.value);
     } else {
         showFailToast({
             message: '加入失败' + res.message ? `${res.message}` : ''
@@ -129,6 +134,7 @@ const coonfirmJoin = () => {
     doJoinTeam();
 }
 
+// 取消加入队伍，关闭弹窗
 const doClear = () => {
     joinTeamId.value = 0
     teamPassword.value = '';
@@ -155,6 +161,7 @@ const doQuitTeam = async (teamId: number) => {
         })
         return;
     }
+    hasJoinTeamIds.value.splice(hasJoinTeamIds.value.findIndex(id => id == teamId), 1);
     showSuccessToast('退出成功');
     router.push({
         path: '/team',
@@ -173,6 +180,7 @@ const doDeleteTeam = async (teamId: number) => {
         })
         return;
     }
+    hasJoinTeamIds.value.splice(hasJoinTeamIds.value.findIndex(id => id == teamId), 1);
     showSuccessToast('解散队伍成功');
     router.push({
         path: '/team',

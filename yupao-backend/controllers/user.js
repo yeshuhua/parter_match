@@ -1,17 +1,28 @@
 // 模型方法代理对象
 const Mappers = require('../services/cate/completion')
+const redis = require('../models/redis');
 // 引入校验模块
 const Joi = require('joi')
 // 引入jsonwebtoken模块生成toekn
 // const jwt = require('jsonwebtoken')
+// 加密库
+var bcrypt = require('bcryptjs');
+var salt = bcrypt.genSaltSync(10);
+
 // qs库
 const qs = require("qs")
+
+const { Worker, workerData } = require('worker_threads');
 
 
 // 引入自己封装的后端统一返回工具
 const BaseBack = require('../config/resultUtils')
 // 自定义错误码
 const CodeEnum = require('../config/CodeEnum')
+// 最小编辑算法
+const minDistance = require('../utils/algorithms/minDistance');
+// 堆实现
+const FixedSizeHeap = require('../utils/algorithms/FixedSizeHeap');
 
 // 加密盐
 // const secretKey = require('../constants/index').secretKey
@@ -55,8 +66,16 @@ module.exports = {
 
             if (!user) {
                 // 不存在相同账号的用户，则向数据库中插入新数据
-                // 密码加密，使用的是bcrypt模块。由于环境配置出现问题，这里没有加密
-                const newUser = await Mappers.User.userAdd(req.body)
+                // 密码加密，使用的是bcrypt模块。由于环境配置出现问题
+                // 这里使用的是bcryptjs模块，零配置
+                // 加密密码
+                var hash = bcrypt.hashSync(userPassword, salt);
+                const newUser = await Mappers.User.userAdd({
+                    ...req.body,
+                    userPassword: hash
+                })
+                // console.log(hash);
+                // console.log(newUser);
                 // console.log(newUser.planetCode);
                 res.json(BaseBack.buildCodeAndData(newUser.planetCode))
             } else {
@@ -87,11 +106,11 @@ module.exports = {
             const playload = {
                 username: userAccount,
                 userId: result.id,
-                userRole: result.userRole
+                userRole: result.userRole,
+                tags: result.tags
             }
-            // 本来密码加密的话，需要解密再进行比较
-
-            if (result.userPassword === userPassword) {
+            // 将传入参数加密后同加密后的密码比较
+            if (bcrypt.compareSync(userPassword, result.userPassword)) {
                 req.session.user = playload
                 req.session.isLogin = true
                 // 使用token的缺点是服务器端无法手动注销token的过期，即使在客户端本地location中删除，只要未过期，token依旧可用
@@ -219,6 +238,15 @@ module.exports = {
     },
     // 用户推荐
     userRecommend: async (req, res, next) => {
+        let cacheKey = null;
+        if (req.session.isLogin) {
+            // 缓存中的键名
+            cacheKey = `homePage:user:recommend:${req.session.user.userId}`;
+            const cacheResult = await redis.get(cacheKey);
+            // 缓存中有值，返回缓存的值
+            if (cacheResult) return res.json(BaseBack.buildCodeAndData(JSON.parse(cacheResult)));
+        }
+
         if (!req.query) return res.json(BaseBack.buildResult(CodeEnum.PARAMS_ERROR))
         const { pageSize, pageNum } = req.query
         // console.log(pageSize);
@@ -240,9 +268,106 @@ module.exports = {
                 userStatus: item.userStatus,
                 createTime: item.createTime,
                 userRole: item.userRole,
-                planetCode: item.planetCode
+                planetCode: item.planetCode,
+                tags: item.tags
             }
         })
+        // 将结果写入redis中，使用try...catch捕获错误，即使写入失败，也不要耽误将结果返回给用户
+        try {
+            // 过期时间为1分钟
+            redis.set(cacheKey ? cacheKey : 'notLogin:recommend', JSON.stringify(filterResult), 'EX', 60);
+        } catch (e) {
+            console.log('redis write failed');
+        }
         return res.json(BaseBack.buildCodeAndData(filterResult))
+    },
+    // 用户随机匹配
+    matchUsers: async (req, res, next) => {
+        if (req.query.num <= 0) return res.json(BaseBack.buildResult(CodeEnum.PARAMS_ERROR));
+        if (!req.session.isLogin) return res.json(BaseBack.buildResult(CodeEnum.NOT_LOGIN));
+        const num = req.query.num;
+        // 最大堆，比较相似度，堆顶为相似度最大的[userId,distance]。
+        const maxHeap = new FixedSizeHeap(num, (a, b) => b[1] - a[1]);
+        let userList = null;
+        const start = performance.now();
+
+        let userId = req.session.user.userId;
+        let tags = JSON.parse(req.session.user.tags);
+        // 是预先将所有用户先查出来取缓存，还是现查？
+        userList = await Mappers.User.userFindAll({
+            // 优化1：只查询需要的字段
+            attributes: ['id', 'tags']
+        })
+
+        // console.log(JSON.stringify(userList));
+        for (let i = 0; i < userList?.length; i++) {
+            // 优化2：标签为空的用户直接跳过，同时剔除自身
+            if (!userList[i].tags || userList[i].id == userId) continue;
+            let distance = minDistance(tags, JSON.parse(userList[i].tags));
+            maxHeap.enqueue([userList[i].id, distance]);
+        }
+
+        const size = maxHeap.size();
+        const ids = [];
+        for (let i = 0; i < size; i++) {
+            ids.push(maxHeap.dequeue()[0]);
+        }
+        console.log(ids);
+        // 不能直接拿id的枚举值查询，会默认按id排序
+        // const users = await Mappers.User.userFindAll({
+        //     where: {
+        //         id: ids
+        //     }
+        // })
+        let users = [];
+        for (let i = ids.length - 1; i >= 0; i--) {
+            let user = await Mappers.User.userFindOne({
+                where: {
+                    id: ids[i]
+                }
+            })
+            users.push(user);
+        }
+        users = users.map(item => {
+            return {
+                id: item.id,
+                username: item.username,
+                userAccount: item.userAccount,
+                avatarUrl: item.avatarUrl,
+                gender: item.gender,
+                phone: item.phone,
+                email: item.email,
+                userStatus: item.userStatus,
+                createTime: item.createTime,
+                userRole: item.userRole,
+                planetCode: item.planetCode,
+                tags: item.tags
+            }
+        })
+
+        const end = performance.now();
+        console.log(end - start);
+        // 创建一个新工作线程，将数据库查询和数据处理在其中执行，然后返回回来
+        // const worker = new Worker('../yupao-backend/utils/workers/matchUserWorker.js', {
+        //     workerData: {
+        //         userId, tags, start
+        //     }
+        // });
+        // 监听其它线程传回来
+        // worker.on('message', result => {
+        //     console.log(typeof result.userList);
+        //     console.log(result.userList.length);
+        //     userList = result.userList;
+        //     const end = performance.now();
+        //     console.log(end - start);
+        //     return res.json(BaseBack.buildCodeAndData(userList));
+        // })
+
+
+
+        // 1.5003.627399999998查所有字段，所有用户求distance
+        // 2.827.6355999999214只查询需要的字段，所有用户求distance
+        // 3.开启另一个线程反而2000多，传回来3000多，线程切换花了1000多
+        return res.json(BaseBack.buildCodeAndData(users));
     }
 }

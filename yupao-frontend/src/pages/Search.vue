@@ -1,22 +1,34 @@
 <template>
   <form action="/">
-    <van-search v-model="searchText" show-action placeholder="请选择搜索标签" @search="onSearch" @cancel="onCancel" />
+    <van-search v-model="searchText"
+                show-action
+                placeholder="请选择搜索标签"
+                @search="onSearch"
+                @cancel="onCancel" />
   </form>
   <van-divider content-position="left">已选择标签</van-divider>
   <div v-if="activeId.length === 0">暂无数据</div>
   <van-row gutter="20">
     <van-col v-for="tag in activeId">
-      <van-tag closeable size="medium" type="primary" @close="closeHandler(tag)">
+      <van-tag closeable
+               size="medium"
+               type="primary"
+               @close="closeHandler(tag)">
         {{ tag }}
       </van-tag>
     </van-col>
   </van-row>
 
   <van-divider content-position="left">请选择标签</van-divider>
-  <van-tree-select v-model:active-id="activeId" v-model:main-active-index="activeIndex" :items="tagList" />
+  <van-tree-select v-model:active-id="activeId"
+                   v-model:main-active-index="activeIndex"
+                   :items="tagList" />
 
-  <div style="padding: 12px">
-    <van-button type="primary" @click="searchHandler" block>搜索</van-button>
+  <div style="padding: 12px"
+       class="searchButton">
+    <van-button type="primary"
+                @click="searchHandler"
+                block>搜索</van-button>
   </div>
 </template>
 
@@ -47,13 +59,24 @@ export default defineComponent({
         children: [
           { text: "Java", id: "Java" },
           { text: "C++", id: "C++" },
-          { text: "js", id: "js" }
+          { text: "js", id: "js" },
+          { text: "区块链", id: "区块链" }
+        ]
+      },
+      {
+        text: "状态",
+        children: [
+          { text: "emo", id: "emo" },
+          { text: "fighting", id: "fingting" },
+          { text: "求职", id: "求职" },
+          { text: "学习", id: "学习" },
+          { text: "摆烂", id: "摆烂" }
         ]
       }
     ];
     const tagList = ref(originTagList);
     // 移除标签
-    const closeHandler = (tag) => {
+    const closeHandler = (tag: string) => {
       // 记得引用类型要返回新数据
       activeId.value = activeId.value.filter((item) => {
         return item !== tag;
@@ -101,4 +124,11 @@ export default defineComponent({
 });
 </script>
 
-<style scoped></style>
+<style scoped>
+.searchButton {
+  position: fixed;
+  bottom: 50px;
+  left: 0;
+  right: 0;
+}
+</style>

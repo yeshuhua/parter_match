@@ -1,26 +1,29 @@
 <template>
   <div id="teamPage">
-    <van-search v-model="searchText"
-                placeholder="搜索队伍"
-                @search="onSearch"
-                @cancel="onCancel" />
-    <van-tabs v-model:active="activeName"
-              @change="onTabChange">
-      <van-tab title="公开"
-               :name="0"></van-tab>
-      <van-tab title="加密"
-               :name="2"></van-tab>
-    </van-tabs>
-    <user-team-list :team-list="teamList"
-                    v-if="teamList.length != 0"></user-team-list>
-    <van-empty v-if="!teamList || teamList.length == 0"
-               image="search"
-               description="搜索结果为空" />
-    <van-button type="primary"
-                icon="plus"
-                class="add_btn"
-                @click="toAddTeam"></van-button>
-
+    <div class="searchTabContainer">
+      <van-search v-model="searchText"
+                  placeholder="搜索队伍"
+                  @search="onSearch"
+                  @cancel="onCancel" />
+      <van-tabs v-model:active="activeName"
+                @change="onTabChange">
+        <van-tab title="公开"
+                 :name="0"></van-tab>
+        <van-tab title="加密"
+                 :name="2"></van-tab>
+      </van-tabs>
+    </div>
+    <div class="ctContainer">
+      <user-team-list :team-list="teamList"
+                      v-if="teamList.length != 0"></user-team-list>
+      <van-empty v-if="!teamList || teamList.length == 0"
+                 image="search"
+                 description="搜索结果为空" />
+      <van-button type="primary"
+                  icon="plus"
+                  class="add_btn"
+                  @click="toAddTeam"></van-button>
+    </div>
   </div>
 </template>
 
@@ -51,6 +54,7 @@ export default defineComponent({
         router.push({
           path: '/user/login',
           query: {
+            // 跳转到登陆页面带上当前页面路径，方便跳转回来
             redirect: route.path
           },
           replace: true
@@ -104,7 +108,7 @@ export default defineComponent({
     const onCancel = () => {
       searchText.value = '';
     }
-    const onTabChange = (name) => {
+    const onTabChange = (name: number) => {
       if (name == 0) {
         searchList(0);
       } else if (name == 2) {
@@ -125,4 +129,16 @@ export default defineComponent({
 </script>
 
 
-<style scoped></style>
+<style scoped>
+.searchTabContainer {
+  position: fixed;
+  z-index: 2;
+  top: 46px;
+  left: 0;
+  right: 0;
+}
+
+.ctContainer {
+  padding-top: 92px;
+}
+</style>

@@ -34,7 +34,8 @@ const app = express()
  * 时间 + 执行的内容
  */
 // 每天凌晨1点执行
-const task = cron.schedule('0 1 * * *', cacheHotCallback);
+// const task = cron.schedule('0 1 * * *', cacheHotCallback);
+const task = cron.schedule('30 19 * * *', cacheHotCallback);
 
 
 // Initialize store.
@@ -87,7 +88,7 @@ app.use((err, req, res, next) => {
     res.status(500).send('something broke...')
 })
 
-app.listen(constants.port, () => {
-    console.log(`server running at port ------${constants.port} ovo`);
+app.listen(8081, () => {
+    console.log(`server running at port ------8081 ovo`);
     task.start();
 })

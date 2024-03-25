@@ -1,11 +1,16 @@
 <template>
   <van-form @submit="onSubmit">
     <van-cell-group inset>
-      <van-field v-model="editUser.currentValue" :name="editUser.editKey" :label="editUser.editName"
-        :placeholder="`请填写${editUser.editName}`" />
+      <van-field v-model="editUser.currentValue"
+                 :name="editUser.editKey"
+                 :label="editUser.editName"
+                 :placeholder="`请填写${editUser.editName}`" />
     </van-cell-group>
     <div style="margin: 16px;">
-      <van-button round block type="primary" native-type="submit">
+      <van-button round
+                  block
+                  type="primary"
+                  native-type="submit">
         提交
       </van-button>
     </div>
@@ -18,7 +23,7 @@ import { useRoute, useRouter } from "vue-router";
 import { showSuccessToast, showFailToast } from "vant";
 import { getLoginUser, setCurrentUserState } from "../globals/user";
 import myAxios from "../plugins/myAxios";
-import { UserType } from "../models/user";
+import { UserType, EditUserType } from "../models/user";
 
 export default defineComponent({
   setup() {
@@ -26,13 +31,13 @@ export default defineComponent({
     const route = useRoute();
     const router = useRouter();
     console.log(route.query);
-    const editUser = ref({
-      editKey: route.query.editKey,
+    const editUser = ref<EditUserType>({
+      editKey: route.query.editKey as string,
       currentValue: route.query.currentValue,
-      editName: route.query.editName
+      editName: route.query.editName as string
     });
 
-    const onSubmit = async (values) => {
+    const onSubmit = async () => {
       const user = await getLoginUser();
       // 将editKey,currentValue,editName提交到后台
       const res = await myAxios.post("/user/update", {

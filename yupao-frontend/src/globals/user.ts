@@ -13,6 +13,10 @@ export const setIsLogin = (state: string) => {
     window.localStorage.setItem('isLogin', state)
 }
 
+export const removeIsLogin = () => {
+    window.localStorage.removeItem('isLogin');
+}
+
 // 获取当前用户信息
 export const getCurrentUserState = () => {
     return JSON.parse(window.localStorage.getItem('CURRENT') || "{}")
@@ -21,6 +25,10 @@ export const getCurrentUserState = () => {
 // 设置当前用户信息
 export const setCurrentUserState = (user: UserType) => {
     window.localStorage.setItem('CURRENT', JSON.stringify(user))
+}
+
+export const removeCurrentUserState = () => {
+    window.localStorage.removeItem('CURRENT');
 }
 
 // 因为在很多地方都要用到当前用户信息，

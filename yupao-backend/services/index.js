@@ -10,7 +10,8 @@ module.exports = class BASE_DB_METHOD {
      * @returns 
      */
     async create(name, ...obj) {
-        return await models[name].create(...obj);
+        // console.log(obj);
+        return await models[name].create(obj[0]);
     }
 
     /**

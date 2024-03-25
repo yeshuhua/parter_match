@@ -22,7 +22,7 @@
                            @click="showPicker = true" />
                 <van-popup v-model:show="showPicker"
                            position="bottom">
-                    <van-date-picker v-model="editTeamData.expireTime"
+                    <van-date-picker v-model="(editTeamData.expireTime as string[])"
                                      title="请选择过期时间"
                                      @confirm="onConfirm"
                                      @cancel="showPicker = false"
@@ -64,10 +64,11 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 // import { TeamType } from '../models/team';
+import { EditTeamType } from '../models/team';
 import myAxios from '../plugins/myAxios';
 import { showSuccessToast, showFailToast } from 'vant';
 // 初始化数据
-const editTeamData = ref({});
+const editTeamData = ref<EditTeamType>({});
 // 获取路由参数
 const route = useRoute();
 const router = useRouter();
@@ -118,8 +119,8 @@ const onSubmit = async () => {
 const result = ref('');
 const showPicker = ref(false);
 // DatePicker弹出层确认
-const onConfirm = ({ selectedValues }) => {
-    console.log(selectedValues);
+const onConfirm = ({ selectedValues }: { selectedValues: string[] }) => {
+    // console.log(selectedValues);
     // 时间格式化
     result.value = selectedValues.join('/');
     showPicker.value = false;

@@ -309,6 +309,7 @@ sequelize.models['Team_User'].sync({ alter: true }).then(() => {
     console.log('与数据库完成同步');
 })
 */
+
 // sequelize.sync();
 
 

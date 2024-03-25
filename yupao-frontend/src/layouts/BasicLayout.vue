@@ -1,6 +1,7 @@
 <template>
   <!-- 导航条 -->
   <van-nav-bar :title="title"
+               class="fixedTop"
                left-arrow
                @click-left="onClickLeft"
                @click-right="onClickRight">
@@ -57,5 +58,14 @@ export default defineComponent({
 <style scoped>
 #content {
   padding-bottom: 40px;
+  padding-top: 46px;
+}
+
+.fixedTop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
 }
 </style>

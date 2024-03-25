@@ -1,6 +1,9 @@
 <template>
-  <user-card-list :user-list="userList"></user-card-list>
-  <van-empty v-if="!userList || userList.length === 0" image="search" description="搜索结果为空" />
+  <user-card-list :user-list="userList"
+                  :loading="loading"></user-card-list>
+  <van-empty v-if="!userList || userList.length === 0"
+             image="search"
+             description="搜索结果为空" />
 </template>
 
 <script lang="ts">
@@ -19,8 +22,10 @@ export default defineComponent({
     const route = useRoute();
     const { tags } = route.query;
     const userList = ref([]);
+    const loading = ref(true);
     // 生命周期钩子，发送请求
     onMounted(async () => {
+      loading.value = true
       const res = await myAxios.get("/user/search/tags", {
         params: {
           tagNameList: tags // tags为数组，需要序列化
@@ -31,16 +36,18 @@ export default defineComponent({
           return qs.stringify(params, { indices: false });
         }
       });
-      console.log(res);
+      // console.log(res);
 
       if (res.code == 0) {
         userList.value = res.data;
         console.log(res.data);
       }
+      loading.value = false
     });
 
     return {
-      userList
+      userList,
+      loading
     };
   }
 });
